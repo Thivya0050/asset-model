@@ -1,65 +1,141 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, Boxes, Building2, Tags, Wrench } from "lucide-react";
+import { StatCardSkeleton } from "@/components/Skeleton";
+
+type Bucket = { total: number; active: number; archived: number };
+type AssetBucket = {
+  total: number;
+  inUse: number;
+  inStorage: number;
+  retired: number;
+};
+
+type Stats = {
+  categories: Bucket;
+  models: Bucket;
+  customers: Bucket;
+  customerAssets: AssetBucket;
+};
+
+export default function DashboardPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then(setStats)
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const cards = [
+    {
+      label: "Categories",
+      href: "/category-types",
+      icon: Tags,
+      total: stats?.categories.total,
+      sub:
+        stats != null
+          ? `${stats.categories.active} active · ${stats.categories.archived} archived`
+          : "—",
+    },
+    {
+      label: "Asset Models",
+      href: "/asset-models",
+      icon: Boxes,
+      total: stats?.models.total,
+      sub:
+        stats != null
+          ? `${stats.models.active} active · ${stats.models.archived} archived`
+          : "—",
+    },
+    {
+      label: "Customers",
+      href: "/customers",
+      icon: Building2,
+      total: stats?.customers.total,
+      sub:
+        stats != null
+          ? `${stats.customers.active} active · ${stats.customers.archived} archived`
+          : "—",
+    },
+    {
+      label: "Customer Assets",
+      href: "/customer-assets",
+      icon: Wrench,
+      total: stats?.customerAssets.total,
+      sub:
+        stats != null
+          ? `${stats.customerAssets.inUse} in use · ${stats.customerAssets.inStorage} in storage · ${stats.customerAssets.retired} retired`
+          : "—",
+    },
+  ];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight text-[#1a1d23]">
+          Dashboard
+        </h2>
+        <p className="mt-1 text-[13px] text-[#6b7280]">
+          Overview of categories, models, customers, and customer assets.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <StatCardSkeleton key={i} />
+            ))
+          : cards.map(({ label, href, icon: Icon, total, sub }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group rounded-[6px] border border-[#e5e7eb] bg-white p-4 transition-colors hover:border-[#c7c9d1]"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      size={14}
+                      strokeWidth={1.75}
+                      className="text-[#9ca3af]"
+                    />
+                    <span className="text-[13px] font-medium text-[#4b5563]">
+                      {label}
+                    </span>
+                  </div>
+                  <ArrowRight
+                    size={14}
+                    className="text-[#d1d5db] transition-colors group-hover:text-[#6b7280]"
+                  />
+                </div>
+                <p className="mt-3 text-[28px] font-semibold leading-none tracking-tight tabular-nums text-[#1a1d23]">
+                  {total ?? "—"}
+                </p>
+                <p className="mt-2 text-[12px] text-[#6b7280]">{sub}</p>
+              </Link>
+            ))}
+      </div>
+
+      <div className="rounded-[6px] border border-[#e5e7eb] bg-white p-5">
+        <h3 className="text-[14px] font-semibold text-[#1a1d23]">Structure</h3>
+        <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-[#6b7280]">
+          Every asset model belongs to a category. Every customer asset
+          references a model and a customer. Archiving a model or customer
+          hides it from new entries; existing links remain intact.
+        </p>
+        <Link
+          href="/asset-models"
+          className="btn-touch mt-4 inline-flex items-center gap-1.5 rounded-[6px] bg-[#4f46e5] px-3 py-1.5 text-[13px] font-medium text-white hover:bg-[#4338ca]"
+        >
+          Open Asset Models
+          <ArrowRight size={14} />
+        </Link>
+      </div>
     </div>
   );
 }

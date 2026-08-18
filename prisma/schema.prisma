@@ -1,0 +1,180 @@
+// Asset Model Module — Prisma schema (SQLite)
+// Each field tagged CONFIRMED (matches real AMS) or ASSUMPTION (best guess).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// INTENTIONAL: app login accounts (not mirrored from real AMS auth)
+enum UserRole {
+  Admin
+  Manager
+  Staff
+  Viewer
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/// CONFIRMED: CategoryType — classification for Asset Models
+model CategoryType {
+  id   String @id @default(cuid())
+  /// CONFIRMED: category display name (without parenthetical code)
+  name String @unique
+  /// CONFIRMED (from real data): short code formerly embedded in name, e.g. SCL
+  code String @unique
+  /// ASSUMPTION: soft-archive flag (never hard-delete categories)
+  isActive Boolean @default(true)
+  /// CONFIRMED: updatedAt auto timestamp
+  updatedAt DateTime @updatedAt
+  /// CONFIRMED: who last changed this row (fake user for now — no auth)
+  updatedBy String
+
+  assetModels    AssetModel[]
+  customerAssets CustomerAsset[]
+
+  createdAt DateTime @default(now())
+}
+
+/// CONFIRMED: AssetModel — PRIMARY entity of this module
+model AssetModel {
+  id String @id @default(cuid())
+
+  /// CONFIRMED: single text field encoding Brand + Model No + Spec
+  /// e.g. "DIGI SM5300X (P) (30KG)"
+  name String
+
+  /// CONFIRMED: FK to CategoryType
+  categoryTypeId String
+  categoryType   CategoryType @relation(fields: [categoryTypeId], references: [id])
+
+  /// ASSUMPTION: manufacturer name (not yet confirmed in real system)
+  manufacturer String?
+
+  /// ASSUMPTION: longer description text
+  description String?
+
+  /// ASSUMPTION: default warranty period in months
+  defaultWarrantyMonths Int?
+
+  /// ASSUMPTION: default stamping/calibration period (weighing scales etc.)
+  defaultStampingMonths Int?
+
+  /// ASSUMPTION: reference unit cost (stored as float in SQLite)
+  unitCost Float?
+
+  /// ASSUMPTION: image URL or uploaded filename reference
+  imageUrl String?
+
+  /// ASSUMPTION: optional attachment filename/URL reference (no real file storage)
+  attachmentUrl String?
+
+  /// ASSUMPTION: Active/Inactive — archive without breaking CustomerAsset refs
+  status ModelStatus @default(Active)
+
+  /// CONFIRMED: updatedAt / updatedBy audit fields
+  updatedAt DateTime @updatedAt
+  updatedBy String
+
+  customerAssets CustomerAsset[]
+
+  createdAt DateTime @default(now())
+
+  @@index([categoryTypeId])
+  @@index([status])
+  @@index([name])
+}
+
+/// ASSUMPTION: status enum for AssetModel (Active / Inactive archive)
+enum ModelStatus {
+  Active
+  Inactive
+}
+
+/// CONFIRMED: Customer — master record (dropdown source for Customer Assets)
+model Customer {
+  id String @id @default(cuid())
+
+  /// CONFIRMED: unique customer / site name
+  name String @unique
+
+  /// INTENTIONAL: Active/Inactive soft-archive (same pattern as models)
+  status CustomerStatus @default(Active)
+
+  /// INTENTIONAL: optional map coordinates (null until real addresses are geocoded)
+  latitude  Float?
+  longitude Float?
+
+  /// CONFIRMED: audit fields
+  updatedAt DateTime @updatedAt
+  updatedBy String
+
+  customerAssets CustomerAsset[]
+
+  createdAt DateTime @default(now())
+}
+
+enum CustomerStatus {
+  Active
+  Inactive
+}
+
+/// CONFIRMED: CustomerAsset — physical unit at a customer site
+model CustomerAsset {
+  id String @id @default(cuid())
+
+  /// CONFIRMED: serial number
+  serialNumber String
+
+  /// CONFIRMED: FK to AssetModel
+  assetModelId String
+  assetModel   AssetModel @relation(fields: [assetModelId], references: [id])
+
+  /// CONFIRMED: category derived from the Model's category at create time
+  categoryTypeId String
+  categoryType   CategoryType @relation(fields: [categoryTypeId], references: [id])
+
+  /// CONFIRMED: FK to Customer master (replaces free-text customerName)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  /// ASSUMPTION: lifecycle status vocabulary (In Use / In Storage / Retired)
+  assetStatus AssetLifecycleStatus @default(InUse)
+
+  /// CONFIRMED: warranty end date
+  warrantyExpiryDate DateTime?
+
+  /// CONFIRMED: stamping/calibration expiry
+  stampingExpiryDate DateTime?
+
+  /// CONFIRMED: audit fields
+  updatedAt DateTime @updatedAt
+  updatedBy String
+
+  createdAt DateTime @default(now())
+
+  @@index([assetModelId])
+  @@index([categoryTypeId])
+  @@index([customerId])
+  @@index([serialNumber])
+}
+
+/// ASSUMPTION: In Use / In Storage / Retired (SQLite-friendly enum names)
+enum AssetLifecycleStatus {
+  InUse
+  InStorage
+  Retired
+}

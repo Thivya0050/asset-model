@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f5f7;
+  --foreground: #1a1d23;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --card: #ffffff;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --radius: 6px;
 }
 
 @theme inline {
@@ -12,15 +18,90 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hide native number-input steppers so rows of number fields align */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Match height/padding of text inputs for date fields across browsers */
+input[type="date"] {
+  min-height: 2.25rem;
+  line-height: 1.25;
+}
+
+/* Touch-friendly controls on small screens */
+@media (max-width: 767px) {
+  .btn-touch {
+    min-height: 44px;
+  }
+}
+
+/* List tables — compact cells + sticky Actions column */
+.data-table-scroll {
+  overflow-x: auto;
+}
+
+/* Leaflet pins — reset default marker chrome */
+.customer-map-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-container {
+  font: inherit;
+  z-index: 0;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(26, 29, 35, 0.12);
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+}
+
+.data-table-sticky-actions {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background-color: #ffffff;
+  border-left: 1px solid #f3f4f6;
+  box-shadow: -4px 0 8px -4px rgba(26, 29, 35, 0.1);
+}
+
+.data-table thead .data-table-sticky-actions {
+  z-index: 3;
+  background-color: #fafafa;
+}
+
+.data-table tbody tr:hover .data-table-sticky-actions {
+  background-color: #fafafa;
+}
+
+@media print {
+  header,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
 }
